@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imgfeatures"
+version = "0.1.0"
+description = "From-scratch NumPy image preprocessing, edge detection and feature extraction."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Stephen Ignatius" }]
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.22",
+    "opencv-python-headless>=4.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B"]
