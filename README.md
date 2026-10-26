@@ -38,6 +38,54 @@ python -m venv .venv && source .venv/bin/activate   # optional
 pip install -e ".[dev]"
 ```
 
+## Quick start / end-to-end demo
+
+```bash
+cd image-processing
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+python examples/make_sample_image.py            # (re)creates examples/sample.png
+imgfeatures examples/sample.png --output output --canny
+# or: python -m imgfeatures examples/sample.png -o output --canny
+```
+
+Output:
+
+```
+Image:               examples/sample.png (256x192)
+Gradient (mean/max): 0.1491 / 4.4341
+Sobel edge density:  0.0419
+Canny edge density:  0.0307
+Feature vector:      6933 values
+Wrote:
+  output/grayscale.png
+  output/edge_magnitude.png
+  output/edges_sobel.png
+  output/edges_canny.png
+  output/features.json
+  output/features.npy
+```
+
+The pipeline is: load (`cv2.imread`) → grayscale → min-max normalise →
+Sobel edges (+ optional OpenCV Canny) → feature extraction.
+`features.json` holds the summary, parameters, layout and the full feature
+vector; `features.npy` holds the vector as a NumPy array.
+
+Useful options (`imgfeatures --help` for all):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `-o, --output DIR` | `output` | Output directory (created if missing) |
+| `--threshold F` | `0.2` | Sobel edge threshold, fraction of max magnitude |
+| `--canny` | off | Also save an OpenCV Canny edge map |
+| `--canny-low / --canny-high` | `50 / 150` | Canny hysteresis thresholds |
+| `--format {json,npy,both}` | `both` | Feature output format |
+| `--hist-bins / --cell-size / --hog-bins` | `16 / 8 / 9` | Feature parameters |
+
+A missing, unreadable or too-small image prints a one-line error to stderr
+and exits with code 1 (bad arguments exit with code 2).
+
 ## Usage
 
 ```python
@@ -208,8 +256,14 @@ expected length.
 image-processing/
 ├── pyproject.toml
 ├── README.md
+├── .github/workflows/ci.yml   # ruff + pytest on Python 3.10-3.13
+├── examples/
+│   ├── make_sample_image.py   # regenerates sample.png
+│   └── sample.png             # small synthetic demo image
 ├── src/imgfeatures/
 │   ├── __init__.py        # public API
+│   ├── __main__.py        # python -m imgfeatures
+│   ├── cli.py             # end-to-end command-line pipeline
 │   ├── _validation.py     # shared input checks
 │   ├── preprocessing.py   # grayscale, normalisation
 │   ├── convolution.py     # convolve2d
@@ -220,7 +274,8 @@ image-processing/
     ├── test_preprocessing.py
     ├── test_convolution.py
     ├── test_edges.py
-    └── test_features.py
+    ├── test_features.py
+    └── test_cli.py        # end-to-end CLI tests (in-process + subprocess)
 ```
 
 ## Running the tests
@@ -235,9 +290,15 @@ impulses, constant images), compare against OpenCV (`cv2.Sobel`,
 `cv2.filter2D`, `cv2.cvtColor`, `cv2.magnitude`) within tolerance, and check
 shapes, dtypes, edge cases and that invalid input raises the right error.
 
-Optional linting (configured in `pyproject.toml`):
+`tests/test_cli.py` runs the whole pipeline on a temporary image, both via
+`main(argv)` and as a `python -m imgfeatures` subprocess, and checks the
+output files and the error paths.
+
+Linting (ruff is included in the `dev` extras; configured in `pyproject.toml`):
 
 ```bash
-pip install ruff
-ruff check src tests
+ruff check src tests examples
 ```
+
+CI (`.github/workflows/ci.yml`) runs ruff, pytest and a CLI smoke test on
+Python 3.10-3.13.

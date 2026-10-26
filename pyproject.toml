@@ -16,7 +16,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.4"]
+
+[project.scripts]
+imgfeatures = "imgfeatures.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
